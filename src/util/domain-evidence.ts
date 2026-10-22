@@ -101,10 +101,16 @@ export async function domainEvidence(host: string): Promise<DomainEvidence> {
   return evidence;
 }
 
-/** True when the domain itself is gone, not just the site behind it. */
+/**
+ * True when the domain itself is gone, not just the site behind it. A domain that resolves only
+ * counts when it is parked: rdap.org answers 404 for every TLD it has no RDAP service for, so RDAP
+ * alone never decides.
+ */
 export function domainIsGone(e: DomainEvidence): boolean {
+  if (e.dns === 'nxdomain' || e.parked) return true;
+  if (e.dns === 'resolves' || e.dns === 'unknown') return false;
   const expired = e.expires !== undefined && new Date(e.expires).getTime() < Date.now();
-  return e.dns === 'nxdomain' || e.parked || e.registered === false || expired;
+  return e.registered === false || expired;
 }
 
 export function formatEvidence(e: DomainEvidence): string {
@@ -112,7 +118,7 @@ export function formatEvidence(e: DomainEvidence): string {
     `- DNS for \`${e.host}\`: ${e.dns}`,
     `- Nameservers: ${e.nameservers.length ? e.nameservers.map((n) => `\`${n}\``).join(', ') : 'none'}${e.parked ? ' (parking service)' : ''}`,
   ];
-  if (e.registered === false) lines.push('- RDAP: domain not registered');
+  if (e.registered === false) lines.push('- RDAP: no record found');
   else if (e.registered) {
     lines.push(
       `- RDAP: ${e.rdapStatus.join(', ') || 'no status'}${e.expires ? `, expires ${e.expires.slice(0, 10)}` : ''}`,
