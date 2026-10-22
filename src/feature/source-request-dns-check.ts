@@ -157,9 +157,17 @@ export async function recheckSourceRequests() {
     checked++;
     if (!domains) continue;
 
-    if (domains.allGone && !labels.includes(downLabel)) {
+    const wantsMark = domains.allGone && !labels.includes(downLabel);
+    const wantsUnmark = !domains.allGone && labels.includes(downLabel);
+    if (!wantsMark && !wantsUnmark) continue;
+
+    // The label listing can lag; act on the issue as it is now.
+    const { data: current } = await client.rest.issues.get(params);
+    const currentLabels = labelNames(current.labels);
+    if (current.state !== 'open' || currentLabels.some((l) => skip.includes(l))) continue;
+    if (wantsMark && !currentLabels.includes(downLabel)) {
       await markDown(client, params, domains);
-    } else if (!domains.allGone && labels.includes(downLabel) && (await hasMarker(client, params, MARKED))) {
+    } else if (wantsUnmark && currentLabels.includes(downLabel) && (await hasMarker(client, params, MARKED))) {
       await unmarkDown(client, params, "a requested site's domain exists again");
     }
   }
