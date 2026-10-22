@@ -27,7 +27,11 @@ export async function sourceNotDown(client: GitHubClient, _commentBody: string) 
   }
   if (issue.state !== 'open' || issue.pull_request) return;
 
-  if (comment.user.login === issue.user.login) {
+  // On a source request the requester means "the site is back": pause, never close their request.
+  const requestLabel = core.getInput('source-request-label');
+  const isRequest = !!requestLabel && labels.includes(requestLabel);
+
+  if (comment.user.login === issue.user.login && !isRequest) {
     const body = withFooter(
       `Closed because @${comment.user.login}, who reported it, says the source works again.`,
       'source-down:withdrawn',
@@ -45,13 +49,17 @@ export async function sourceNotDown(client: GitHubClient, _commentBody: string) 
   }
 
   const body = withFooter(
-    `Thanks @${comment.user.login}. Automatic removal is paused until a maintainer checks this report. If only part of the extension fails because of the site, a maintainer can relabel it \`${core.getInput('site-issues-label')}\`.`,
+    isRequest
+      ? `Thanks @${comment.user.login}. Automatic closing is paused until a maintainer checks whether the site is back.`
+      : `Thanks @${comment.user.login}. Automatic removal is paused until a maintainer checks this report. If only part of the extension fails because of the site, a maintainer can relabel it \`${core.getInput('site-issues-label')}\`.`,
     'source-down:disputed',
   );
   await write(`Label #${issue.number} ${disputedLabel}: disputed by @${comment.user.login}`, async () => {
     await client.rest.issues.addLabels({ ...params, labels: [disputedLabel] });
     await client.rest.issues.createComment({ ...params, body });
   });
+
+  if (isRequest) return;
 
   const extensions = await fetchExtensionIndex();
   if (!extensions) return;

@@ -196,6 +196,17 @@ inputs:
       `disputed-label`, `site-issues-label` and `auto-close-ignore-label` always do.
     default: |
       []
+  source-request-label:
+    required: false
+    description: >
+      Label of source requests. A source request that also carries `source-down-label` for `removal-days`
+      is closed instead of removed; only `disputed-label` and `auto-close-ignore-label` stop that.
+  source-request-down-comment:
+    required: false
+    description: >
+      The body of the comment when a source request is closed because its site stayed down. `{days}` is available.
+    default: |
+      This request was closed because the site has been down for {days} days. Open a new request if it comes back.
   disputed-label:
     required: false
     default: Disputed

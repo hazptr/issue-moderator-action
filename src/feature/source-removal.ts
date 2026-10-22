@@ -14,6 +14,7 @@ import {
 } from '../util/extension-resolver';
 import {
   IssueParameters,
+  fillTemplate,
   hasMarker,
   jsonInput,
   labelNames,
@@ -62,7 +63,8 @@ async function labeledAt(
 }
 
 /**
- * Daily: open removal PRs for down reports that stayed open for `removal-days`.
+ * Daily: open removal PRs for down reports that stayed open for `removal-days`,
+ * and close source requests whose site stayed down as long.
  */
 export async function checkForSourceRemovals() {
   if (core.getInput('removal-enabled') !== 'true') {
@@ -73,6 +75,8 @@ export async function checkForSourceRemovals() {
   const downLabel = core.getInput('source-down-label', { required: true });
   const days = Number(core.getInput('removal-days') || '14');
   const blockers = removalBlockers();
+  const requestLabel = core.getInput('source-request-label');
+  const requestBlockers = [core.getInput('disputed-label'), core.getInput('auto-close-ignore-label')].filter(Boolean);
   const extensions = await fetchExtensionIndex();
   if (!extensions) return;
 
@@ -92,7 +96,9 @@ export async function checkForSourceRemovals() {
     if (issue.pull_request) continue;
     const params = { owner: repo.owner, repo: repo.repo, issue_number: issue.number };
     const labels = labelNames(issue.labels);
-    const blocker = labels.find((l) => blockers.includes(l));
+    // A requested site that went down: there is no extension to remove, only the request to close.
+    const isRequest = !!requestLabel && labels.includes(requestLabel);
+    const blocker = labels.find((l) => (isRequest ? requestBlockers : blockers).includes(l));
     if (blocker) {
       core.info(`#${issue.number}: skipped, labelled ${blocker}`);
       continue;
@@ -101,6 +107,18 @@ export async function checkForSourceRemovals() {
     const since = await labeledAt(client, params, downLabel, issue.created_at);
     if (!isDue(since, now, days)) {
       core.info(`#${issue.number}: ${Math.floor((now.getTime() - since.getTime()) / DAY)} of ${days} days`);
+      continue;
+    }
+
+    if (isRequest) {
+      const body = withFooter(
+        fillTemplate(core.getInput('source-request-down-comment'), { days: `${days}` }),
+        'source-removal:request-closed',
+      );
+      await write(`Close source request #${issue.number}: site down for ${days} days`, async () => {
+        await client.rest.issues.createComment({ ...params, body });
+        await client.rest.issues.update({ ...params, state: 'closed', state_reason: 'not_planned' });
+      });
       continue;
     }
 
