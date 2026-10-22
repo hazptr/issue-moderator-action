@@ -6,6 +6,7 @@ import { checkForCommand } from './feature/commands';
 import { checkForDuplicateUrls } from './feature/duplicate-url-check';
 import { checkForExistingSource } from './feature/existing-source-check';
 import { checkSourceReport } from './feature/source-report-check';
+import { checkSourceRequestDomain } from './feature/source-request-dns-check';
 import { checkForSourceRemovals } from './feature/source-removal';
 
 async function withLogGroup(name: string, fn: () => Promise<void>) {
@@ -44,6 +45,7 @@ async function run() {
       await withLogGroup('Existing source checker', checkForExistingSource);
       await withLogGroup('Duplicate URL checker', checkForDuplicateUrls);
       await withLogGroup('Source report checker', checkSourceReport);
+      await withLogGroup('Source request domain checker', checkSourceRequestDomain);
       return;
     }
 

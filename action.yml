@@ -207,6 +207,19 @@ inputs:
       The body of the comment when a source request is closed because its site stayed down. `{days}` is available.
     default: |
       This request was closed because the site has been down for {days} days. Open a new request if it comes back.
+  request-dns-check-enabled:
+    required: false
+    description: >
+      Control if the action should check the domains of new source requests (`source-request-label`)
+      with public DNS and RDAP. When every requested domain is gone (does not resolve, parked, unregistered
+      or expired), the request gets `source-down-label`, which closes it after `removal-days`.
+      URLs are read from `url-search-sections`. The requested site itself is never contacted.
+  request-dns-down-comment:
+    required: false
+    description: >
+      The body of the comment when a source request is marked as down. `{hosts}`, `{reason}` and `{days}` are available.
+    default: |
+      The requested site's domain is gone ({reason}), so this request is marked as down and will be closed in {days} days. If the link is wrong, edit it; if the site is back, comment `Source is not down`.
   disputed-label:
     required: false
     default: Disputed
