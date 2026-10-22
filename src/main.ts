@@ -28,6 +28,12 @@ async function run() {
       throw new Error('Internal error, no sender provided by GitHub');
     }
 
+    // With an app token as repo-token, the action's own comments and closes trigger new runs.
+    if (payload.sender.type === 'Bot') {
+      core.info(`SKIP: event sent by ${payload.sender.login}`);
+      return;
+    }
+
     if (eventName === 'issues') {
       if (!payload.action || !payload.issue) {
         core.info('Irrelevant action trigger');
