@@ -5,6 +5,8 @@ import { checkForAutoClose } from './feature/auto-closer';
 import { checkForCommand } from './feature/commands';
 import { checkForDuplicateUrls } from './feature/duplicate-url-check';
 import { checkForExistingSource } from './feature/existing-source-check';
+import { checkSourceReport } from './feature/source-report-check';
+import { checkForSourceRemovals } from './feature/source-removal';
 
 async function withLogGroup(name: string, fn: () => Promise<void>) {
   core.startGroup(name);
@@ -16,6 +18,12 @@ async function run() {
   try {
     const { eventName, payload } = github.context;
 
+    if (eventName === 'schedule' || eventName === 'workflow_dispatch') {
+      await withLogGroup('Source removal', checkForSourceRemovals);
+      return;
+    }
+
+    // Scheduled runs have no sender; issue events always do.
     if (!payload.sender) {
       throw new Error('Internal error, no sender provided by GitHub');
     }
@@ -29,6 +37,7 @@ async function run() {
       await withLogGroup('Auto closer', checkForAutoClose);
       await withLogGroup('Existing source checker', checkForExistingSource);
       await withLogGroup('Duplicate URL checker', checkForDuplicateUrls);
+      await withLogGroup('Source report checker', checkSourceReport);
       return;
     }
 

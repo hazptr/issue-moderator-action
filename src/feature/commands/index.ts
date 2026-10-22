@@ -10,10 +10,14 @@ import { closeDuplicateIssue } from './close-duplicate-issue';
 import { deleteIssue } from './delete-issue';
 import { editIssueTitle } from './edit-issue-title';
 import { lockIssue } from './lock-issue';
+import { removeSource } from './remove-source';
+import { sourceNotDown } from './source-not-down';
 
 type CommandFn = (client: GitHubClient, commentBody: string) => Promise<void>;
 interface Command {
   minimizeComment: boolean;
+  /** Anyone may use it, not only organization members. */
+  public?: boolean;
   fn: CommandFn;
 }
 
@@ -40,6 +44,15 @@ const COMMANDS: Record<string, Command> = {
   lock: {
     minimizeComment: true,
     fn: lockIssue,
+  },
+  'not-down': {
+    minimizeComment: false,
+    public: true,
+    fn: sourceNotDown,
+  },
+  remove: {
+    minimizeComment: true,
+    fn: removeSource,
   },
 };
 
@@ -79,20 +92,22 @@ export async function checkForCommand() {
     core.getInput('repo-token', { required: true }),
   );
 
-  try {
-    const memberToken = core.getInput('member-token');
-    const memberClient = memberToken ? github.getOctokit(memberToken) : client;
-
-    await memberClient.rest.orgs.checkMembershipForUser({
-      org: repo.owner,
-      username: commentUser.login,
-    });
-  } catch (_) {
-    core.info('Could not verify the membership of the comment author');
-    return;
-  }
-
   const command = COMMANDS[commandToRun];
+
+  if (!command.public) {
+    try {
+      const memberToken = core.getInput('member-token');
+      const memberClient = memberToken ? github.getOctokit(memberToken) : client;
+
+      await memberClient.rest.orgs.checkMembershipForUser({
+        org: repo.owner,
+        username: commentUser.login,
+      });
+    } catch (_) {
+      core.info('Could not verify the membership of the comment author');
+      return;
+    }
+  }
 
   await command.fn(client, commentBody);
 

@@ -34,6 +34,14 @@ inputs:
     required: false
     default: Lock this issue
     description: Command to lock an issue
+  not-down-command:
+    required: false
+    default: Source is not down
+    description: Command anyone can use to say a reported source still works
+  remove-command:
+    required: false
+    default: Remove this source
+    description: Command to open the removal pull request for a reported source now
   duplicate-command:
     required: false
     default: 'Duplicate of #'
@@ -117,3 +125,83 @@ inputs:
   auto-close-ignore-label:
     required: false
     description: Optional label name. If present, auto-close rule execution is skipped.
+
+  dry-run:
+    required: false
+    description: Log the writes the source check and source removal would make instead of making them.
+
+  source-check-enabled:
+    required: false
+    description: >
+      Control if the action should check that source reports name an existing extension.
+      Uses `existing-check-repo-url` for the list of extensions.
+  source-check-labels:
+    required: false
+    description: >
+      A JSON-compliant string containing a list of label names as strings to check.
+      Required if `source-check-enabled` is enabled.
+  source-check-exclude-labels:
+    required: false
+    description: >
+      A JSON-compliant string containing a list of label names that skip the source check,
+      e.g. source requests that were closed with the source down label.
+    default: |
+      []
+  source-check-not-found-comment:
+    required: false
+    description: >
+      The body of the comment when no extension matches the report. `{reportedName}` is the name as reported.
+    default: |
+      This report was closed because no extension matches **{reportedName}**. Edit the report to use the extension name exactly as shown in **Browse → Extensions**, or the source's link, and it will be reopened.
+  previously-deleted-label:
+    required: false
+    description: Label to add when the reported extension was removed before.
+  source-check-previously-deleted-comment:
+    required: false
+    description: >
+      The body of the comment when the reported extension was removed before.
+      `{reportedName}` is the name as reported, `{commitUrl}` the commit that removed it.
+    default: |
+      This report was closed because **{reportedName}** was already removed from the repository in {commitUrl}.
+  site-issues-label:
+    required: false
+    description: >
+      Label for issues where part of an extension fails because of the site itself.
+      New reports for the same extension are closed as duplicates, and these issues are never removed automatically.
+  site-issues-duplicate-comment:
+    required: false
+    description: >
+      The body of the comment when a report duplicates an open site issue.
+      `{extensionName}` and `{issueNumber}` are available.
+    default: |
+      This report was closed because #{issueNumber} already tracks a problem with **{extensionName}** that comes from the site itself.
+
+  removal-enabled:
+    required: false
+    description: >
+      Control if the action should open pull requests removing extensions whose down reports stayed open.
+      Runs on `schedule` and `workflow_dispatch` events.
+  source-down-label:
+    required: false
+    default: Source is down
+    description: Label of source down reports.
+  removal-days:
+    required: false
+    default: '14'
+    description: Days a report has to carry `source-down-label` before the extension is removed.
+  removal-exclude-labels:
+    required: false
+    description: >
+      A JSON-compliant string containing a list of label names that keep a report from automatic removal.
+      `disputed-label`, `site-issues-label` and `auto-close-ignore-label` always do.
+    default: |
+      []
+  disputed-label:
+    required: false
+    default: Disputed
+    description: Label added when someone says a reported source still works.
+  pr-token:
+    required: false
+    description: >
+      Token used to push removal branches and open pull requests. Needs contents and pull requests write.
+      Pull requests opened with the default GITHUB_TOKEN do not start other workflows. Defaults to `repo-token`.

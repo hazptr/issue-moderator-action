@@ -45,7 +45,7 @@ export function cleanUrl(url: string): string {
     .replace(/\/$/, '');
 }
 
-function findSection(body: string, sectionName: string) {
+export function findSection(body: string, sectionName: string) {
   const start = body.indexOf(`# ${sectionName}`);
   if (start == -1) return false;
 
