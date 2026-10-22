@@ -6,7 +6,10 @@ import { checkForCommand } from './feature/commands';
 import { checkForDuplicateUrls } from './feature/duplicate-url-check';
 import { checkForExistingSource } from './feature/existing-source-check';
 import { checkSourceReport } from './feature/source-report-check';
-import { checkSourceRequestDomain } from './feature/source-request-dns-check';
+import {
+  checkSourceRequestDomain,
+  recheckSourceRequests,
+} from './feature/source-request-dns-check';
 import { checkForSourceRemovals } from './feature/source-removal';
 
 async function withLogGroup(name: string, fn: () => Promise<void>) {
@@ -20,6 +23,7 @@ async function run() {
     const { eventName, payload } = github.context;
 
     if (eventName === 'schedule' || eventName === 'workflow_dispatch') {
+      await withLogGroup('Source request recheck', recheckSourceRequests);
       await withLogGroup('Source removal', checkForSourceRemovals);
       return;
     }
