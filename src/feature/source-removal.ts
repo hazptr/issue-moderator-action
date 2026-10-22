@@ -92,10 +92,16 @@ export async function checkForSourceRemovals() {
     per_page: 100,
   });
 
-  for (const issue of issues) {
-    if (issue.pull_request) continue;
-    const params = { owner: repo.owner, repo: repo.repo, issue_number: issue.number };
+  for (const listed of issues) {
+    if (listed.pull_request) continue;
+    const params = { owner: repo.owner, repo: repo.repo, issue_number: listed.number };
+    // The label listing can lag behind label changes made moments ago (e.g. by the request recheck).
+    const { data: issue } = await client.rest.issues.get(params);
     const labels = labelNames(issue.labels);
+    if (issue.state !== 'open' || !labels.includes(downLabel)) {
+      core.info(`#${issue.number}: no longer an open ${downLabel} issue`);
+      continue;
+    }
     // A requested site that went down: there is no extension to remove, only the request to close.
     const isRequest = !!requestLabel && labels.includes(requestLabel);
     const blocker = labels.find((l) => (isRequest ? requestBlockers : blockers).includes(l));
