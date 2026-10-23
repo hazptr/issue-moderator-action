@@ -36,9 +36,12 @@ describe('registrableDomain', () => {
 
 describe('domainIsGone', () => {
   const base = { host: 'a.org', nameservers: [], parked: false, rdapStatus: [], registered: true };
-  it('treats NXDOMAIN and parking as gone', () => {
+  it('treats NXDOMAIN as gone', () => {
     expect(domainIsGone({ ...base, dns: 'nxdomain' })).toBe(true);
-    expect(domainIsGone({ ...base, dns: 'resolves', parked: true })).toBe(true);
+  });
+  it('never decides on nameservers', () => {
+    // Hostinger's default nameservers (dns-parking.com) also serve live sites.
+    expect(domainIsGone({ ...base, dns: 'resolves', parked: true })).toBe(false);
   });
   it('uses RDAP only when DNS has no answer', () => {
     expect(domainIsGone({ ...base, dns: 'no-answer', registered: false })).toBe(true);

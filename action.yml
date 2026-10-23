@@ -211,8 +211,8 @@ inputs:
     required: false
     description: >
       Control if the action should check the domains of new source requests (`source-request-label`)
-      with public DNS and RDAP. When every requested domain is gone (does not resolve, parked, unregistered
-      or expired), the request gets `source-down-label`, which closes it after `removal-days`.
+      with public DNS and RDAP. When every requested domain is gone (DNS says it does not exist, or DNS has
+      no answer and RDAP shows it unregistered or expired), the request gets `source-down-label`, which closes it after `removal-days`.
       URLs are read from `url-search-sections`. The requested site itself is never contacted.
   request-recheck-days:
     required: false
