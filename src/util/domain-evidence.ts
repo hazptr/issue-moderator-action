@@ -13,21 +13,9 @@ export interface DomainEvidence {
   registered: boolean | undefined;
 }
 
-// Nameservers that serve parking or for-sale pages instead of a site.
-const PARKING_NAMESERVERS = [
-  'dns-parking.com',
-  'parkingcrew.net',
-  'sedoparking.com',
-  'bodis.com',
-  'above.com',
-  'parklogic.com',
-  'dan.com',
-  'afternic.com',
-  'parked.com',
-  'expired.domains',
-  'dns-expired.com',
-  'parity.domains',
-];
+// Nameservers of services that only serve parking or for-sale pages. Shown as information only:
+// registrar defaults such as Hostinger's dns-parking.com also host live sites, so nameservers never decide.
+const PARKING_NAMESERVERS = ['parity.domains', 'park-my-domain.net', 'sedoparking.com', 'parkingcrew.net', 'bodis.com'];
 
 const DOH = 'https://cloudflare-dns.com/dns-query';
 const TIMEOUT = 10_000;
@@ -102,13 +90,13 @@ export async function domainEvidence(host: string): Promise<DomainEvidence> {
 }
 
 /**
- * True when the domain itself is gone, not just the site behind it. A domain that resolves only
- * counts when it is parked: rdap.org answers 404 for every TLD it has no RDAP service for, so RDAP
- * alone never decides.
+ * True when the domain itself no longer exists: DNS says NXDOMAIN, or DNS has no answer and RDAP
+ * confirms it is unregistered or expired. RDAP alone never decides (rdap.org answers 404 for every
+ * TLD it has no RDAP service for), and neither do nameservers.
  */
 export function domainIsGone(e: DomainEvidence): boolean {
-  if (e.dns === 'nxdomain' || e.parked) return true;
-  if (e.dns === 'resolves' || e.dns === 'unknown') return false;
+  if (e.dns === 'nxdomain') return true;
+  if (e.dns !== 'no-answer') return false;
   const expired = e.expires !== undefined && new Date(e.expires).getTime() < Date.now();
   return e.registered === false || expired;
 }
@@ -116,7 +104,7 @@ export function domainIsGone(e: DomainEvidence): boolean {
 export function formatEvidence(e: DomainEvidence): string {
   const lines = [
     `- DNS for \`${e.host}\`: ${e.dns}`,
-    `- Nameservers: ${e.nameservers.length ? e.nameservers.map((n) => `\`${n}\``).join(', ') : 'none'}${e.parked ? ' (parking service)' : ''}`,
+    `- Nameservers: ${e.nameservers.length ? e.nameservers.map((n) => `\`${n}\``).join(', ') : 'none'}${e.parked ? ' (a parking service)' : ''}`,
   ];
   if (e.registered === false) lines.push('- RDAP: no record found');
   else if (e.registered) {

@@ -175,8 +175,7 @@ export async function recheckSourceRequests() {
 }
 
 function goneReason(e: DomainEvidence): string {
-  if (e.dns === 'nxdomain') return `${e.host} does not resolve`;
-  if (e.registered === false) return `${e.host} is not registered`;
-  if (e.parked) return `${e.host} is parked (${e.nameservers[0]})`;
-  return `${e.host}'s registration expired on ${e.expires?.slice(0, 10)}`;
+  if (e.dns === 'nxdomain') return `${e.host} does not exist`;
+  if (e.registered === false) return `${e.host} has no DNS answer and no registration record`;
+  return `${e.host} has no DNS answer and its registration expired on ${e.expires?.slice(0, 10)}`;
 }
